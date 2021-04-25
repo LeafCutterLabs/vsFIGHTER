@@ -1,2 +1,3 @@
 # vsFIGHTER
-Cherry MX based all-button fighting controller
+Open sorce Cherry MX based all-button fighting controller featuring:
+![](media/top.jpg)
