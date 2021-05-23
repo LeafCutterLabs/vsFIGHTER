@@ -1,0 +1,6 @@
+#pragma once
+
+#define BOOTMAGIC_LITE_ROW 0
+#define BOOTMAGIC_LITE_COL 12
+
+#define DYNAMIC_KEYMAP_LAYER_COUNT 1
