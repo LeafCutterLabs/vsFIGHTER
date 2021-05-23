@@ -9,3 +9,6 @@
 }
 
 #define LAYOUT LAYOUT_ortho_1x16 
+
+#define SOCD_CLEANER_LRN_UDU
+//#define SOCD_CLEANER_LAST_INPUT_WINS
