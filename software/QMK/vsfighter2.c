@@ -5,33 +5,28 @@ void matrix_init_kb(void) {
 }
 
 #if defined(SOCD_CLEANER_LRN_UDU) || defined(SOCD_CLEANER_LAST_INPUT_WINS)
-static uint16_t key_up;
-static uint16_t key_down;
-static uint16_t key_left;
-static uint16_t key_right;
+static keypos_t keypos_up = {0, 0};
+static keypos_t keypos_down = {1, 0};
+static keypos_t keypos_left = {2, 0};
+static keypos_t keypos_right = {3, 0};
 
-static bool pressed_up = false;
-static bool pressed_down = false;
-static bool pressed_left = false;
-static bool pressed_right = false;
+static uint8_t pressed_up = 0;
+static uint8_t pressed_down = 0;
+static uint8_t pressed_left = 0;
+static uint8_t pressed_right = 0;
 
 #ifdef SOCD_CLEANER_LAST_INPUT_WINS
-static bool up_wins = false;
-static bool left_wins = false;
+static uint8_t up_wins = 0;
+static uint8_t left_wins = 0;
 #endif
 
-void keyboard_post_init_user(void) {
-	/*
-	 * Read keymap from progmem after initialization. Only supports one layer.
-	 * TODO: Figure out how to work with dynamic keymaps (VIA)
-	 */
-	key_up = pgm_read_word(&keymaps[0][0][0]);
-	key_down = pgm_read_word(&keymaps[0][0][1]);
-	key_left = pgm_read_word(&keymaps[0][0][2]);
-	key_right = pgm_read_word(&keymaps[0][0][3]);
-}
-
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
+	uint8_t layer = layer_switch_get_layer(record->event.key);
+	uint16_t key_up = keymap_key_to_keycode(layer, keypos_up);
+	uint16_t key_down = keymap_key_to_keycode(layer, keypos_down);
+	uint16_t key_left = keymap_key_to_keycode(layer, keypos_left);
+	uint16_t key_right = keymap_key_to_keycode(layer, keypos_right);
+	uint8_t layer_mask = (1 << layer);
 #ifdef SOCD_CLEANER_LRN_UDU
 	/*
 	 * Left + Right = Neutral
@@ -39,54 +34,54 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 	 */
 	if (keycode == key_up) {
 		if (record->event.pressed) {
-			pressed_up = true;
-			if (pressed_down) {
+			pressed_up |= layer_mask;
+			if (pressed_down & layer_mask) {
 				unregister_code(key_down);
 				return true;
 			}
 		} else {
-			pressed_up = false;
-			if (pressed_down) {
+			pressed_up &= (~layer_mask);
+			if (pressed_down & layer_mask) {
 				register_code(key_down);
 				return true;
 			}
 		}
 	} else if (keycode == key_down) {
 		if (record->event.pressed) {
-			pressed_down = true;
-			if (pressed_up) {
+			pressed_down |= layer_mask;
+			if (pressed_up & layer_mask) {
 				return false;
 			}
 		} else {
-			pressed_down = false;
-			if (pressed_up) {
+			pressed_down &= (~layer_mask);
+			if (pressed_up & layer_mask) {
 				return false;
 			}
 		}
 	} else if (keycode == key_left) {
 		if (record->event.pressed) {
-			pressed_left = true;
-			if (pressed_right) {
+			pressed_left |= layer_mask;
+			if (pressed_right & layer_mask) {
 				unregister_code(key_right);
 				return false;
 			}
 		} else {
-			pressed_left = false;
-			if (pressed_right) {
+			pressed_left &= (~layer_mask);
+			if (pressed_right & layer_mask) {
 				register_code(key_right);
 				return false;
 			}
 		}
 	} else if (keycode == key_right) {
 		if (record->event.pressed) {
-			pressed_right = true;
-			if (pressed_left) {
+			pressed_right |= layer_mask;
+			if (pressed_left & layer_mask) {
 				unregister_code(key_left);
 				return false;
 			}
 		} else {
-			pressed_right = false;
-			if (pressed_left) {
+			pressed_right &= (~layer_mask);
+			if (pressed_left & layer_mask) {
 				register_code(key_left);
 				return false;
 			}
@@ -96,15 +91,15 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 	/* Last input wins */
 	if (keycode == key_up) {
 		if (record->event.pressed) {
-			pressed_up = true;
-			if (pressed_down) {
+			pressed_up |= layer_mask;
+			if (pressed_down & layer_mask) {
 				unregister_code(key_down);
-				up_wins = true;
+				up_wins |= layer_mask;
 			}
 		} else {
-			pressed_up = false;
-			if (pressed_down) {
-				if (up_wins) {
+			pressed_up &= (~layer_mask);
+			if (pressed_down & layer_mask) {
+				if (up_wins & layer_mask) {
 					register_code(key_down);
 				} else {
 					return false;
@@ -113,15 +108,15 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 		}
 	} else if (keycode == key_down) {
 		if (record->event.pressed) {
-			pressed_down = true;
-			if (pressed_up) {
+			pressed_down |= layer_mask;
+			if (pressed_up & layer_mask) {
 				unregister_code(key_up);
-				up_wins = false;
+				up_wins &= (~layer_mask);
 			}
 		} else {
-			pressed_down = false;
-			if (pressed_up) {
-				if (!up_wins) {
+			pressed_down &= (~layer_mask);
+			if (pressed_up & layer_mask) {
+				if (!(up_wins & layer_mask)) {
 					register_code(key_up);
 				} else {
 					return false;
@@ -130,15 +125,15 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 		}
 	} else if (keycode == key_left) {
 		if (record->event.pressed) {
-			pressed_left = true;
-			if (pressed_right) {
+			pressed_left |= layer_mask;
+			if (pressed_right & layer_mask) {
 				unregister_code(key_right);
-				left_wins = true;
+				left_wins |= layer_mask;
 			}
 		} else {
-			pressed_left = false;
-			if (pressed_right) {
-				if (left_wins) {
+			pressed_left &= (~layer_mask);
+			if (pressed_right & layer_mask) {
+				if (left_wins & layer_mask) {
 					register_code(key_right);
 				} else {
 					return false;
@@ -147,15 +142,15 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 		}
 	} else if (keycode == key_right) {
 		if (record->event.pressed) {
-			pressed_right = true;
-			if (pressed_left) {
+			pressed_right |= layer_mask;
+			if (pressed_left & layer_mask) {
 				unregister_code(key_left);
-				left_wins = false;
+				left_wins &= (~layer_mask);
 			}
 		} else {
-			pressed_right = false;
-			if (pressed_left) {
-				if (!left_wins) {
+			pressed_right &= (~layer_mask);
+			if (pressed_left & layer_mask) {
+				if (!(left_wins & layer_mask)) {
 					register_code(key_left);
 				} else {
 					return false;
