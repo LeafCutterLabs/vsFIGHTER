@@ -48,6 +48,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 }
 //speed for double tap
 #define TAPPING_TERM 300
+#define USB_POLLING_INTERVAL_MS 1
 
 #define UNUSED_PINS
 
